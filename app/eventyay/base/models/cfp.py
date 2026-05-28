@@ -109,7 +109,7 @@ def default_fields():
         'track': {'visibility': 'do_not_ask', 'public': True},
         'duration': {'visibility': 'do_not_ask', 'public': True},
         'slot_count': {'visibility': 'optional', 'public': False},
-        'content_locale': {'visibility': 'required', 'public': True},
+        'content_locale': {'visibility': 'do_not_ask', 'public': True},
         'additional_speaker': {'visibility': 'optional', 'public': False},
         'fullname': {'visibility': 'required', 'public': True},
     }

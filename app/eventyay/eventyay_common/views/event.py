@@ -174,7 +174,6 @@ class EventCreateView(SafeSessionWizardView):
         if step == 'foundation':
             initial_form['is_video_creation'] = True
             initial_form['locales'] = ['en']
-            initial_form['content_locales'] = ['en']
             initial_form['create_for'] = EventCreatedFor.BOTH
             if 'organizer' in request_get:
                 try:
@@ -291,7 +290,9 @@ class EventCreateView(SafeSessionWizardView):
             event.settings.set('timezone', basics_data['timezone'])
             event.settings.set('locale', basics_data['locale'])
             event.settings.set('locales', foundation_data['locales'])
-            content_locales = foundation_data.get('content_locales') or foundation_data['locales']
+            # Default content_locales to the selected Event Languages;
+            # organizers can refine this later via the CfP Forms page.
+            content_locales = foundation_data['locales']
             event.settings.set('content_locales', content_locales)
             # Persist timezone on the event model as well so downstream consumers see the updated value
             event.timezone = basics_data['timezone']
@@ -410,7 +411,7 @@ class EventUpdate(
             self.object.save(update_fields=['timezone'])
         form.instance.update_language_configuration(
             locales=self.sform.cleaned_data.get('locales'),
-            content_locales=self.sform.cleaned_data.get('content_locales'),
+            content_locales=self.sform.cleaned_data.get('content_locales', self.object.content_locales),
             default_locale=self.sform.cleaned_data.get('locale'),
         )
 

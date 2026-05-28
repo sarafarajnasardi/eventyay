@@ -10,6 +10,7 @@
     {% compress css %}
         <link rel="stylesheet" href="{% static 'orga/css/dragsort.css' %}">
         <link rel="stylesheet" href="{% static 'orga/css/question-toggles.css' %}">
+        <link rel="stylesheet" href="{% static 'eventyay-common/css/content-locale-modal.css' %}">
     {% endcompress %}
 {% endblock stylesheets %}
 
@@ -103,6 +104,7 @@
                             <th>{% translate "Maximum length" %}</th>
                             <th class="text-center">{% translate "Public" %}</th>
                             <th class="text-center">{% translate "Answers" %}</th>
+                            <th class="text-center">{% translate "Settings" %}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -133,6 +135,7 @@
                                 </label>
                             </td>
                             <td class="text-center">{{ field_counts.title }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -175,6 +178,7 @@
                                 </label>
                             </td>
                             <td class="text-center">{{ field_counts.abstract }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -218,6 +222,7 @@
                                 </label>
                             </td>
                             <td class="text-center">{{ field_counts.description }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -255,6 +260,7 @@
                             <td></td>
                             <td></td>
                             <td class="text-center">{{ field_counts.notes }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -297,6 +303,7 @@
                                 </label>
                             </td>
                             <td class="text-center">{{ field_counts.track }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -339,6 +346,7 @@
                                 </label>
                             </td>
                             <td class="text-center">{{ field_counts.duration }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -376,6 +384,7 @@
                             <td></td>
                             <td></td>
                             <td class="text-center">{{ field_counts.slot_count }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -407,7 +416,8 @@
                                 <label class="toggle-switch" data-field-id="{{ field.auto_id }}"
                                     aria-label="Toggle active state for Content Locale">
                                     <input type="checkbox" {% if field.value != 'do_not_ask' %}checked{% endif %}
-                                        aria-label="Active toggle for Content Locale">
+                                        aria-label="Active toggle for Content Locale"
+                                        id="content-locale-active-toggle">
                                     <span class="toggle-slider"></span>
                                 </label>
                                 <input type="hidden" name="{{ field.html_name }}" value="{{ field.value }}"
@@ -435,6 +445,15 @@
                                 </label>
                             </td>
                             <td class="text-center">{{ field_counts.content_locale }}</td>
+                            <td class="text-center">
+                                <a href="#content-locale-modal"
+                                   id="content-locale-settings-link"
+                                   class="btn btn-default btn-sm"
+                                   aria-label="{% translate 'Settings for Content Locale languages' %}"
+                                   title="{% translate 'Settings for Content Locale languages' %}">
+                                    <i class="fa fa-cog fa-fw" aria-hidden="true"></i>
+                                </a>
+                            </td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -479,6 +498,7 @@
                                 </label>
                             </td>
                             <td class="text-center">{{ field_counts.image }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -522,6 +542,7 @@
                                 </label>
                             </td>
                             <td class="text-center">{{ field_counts.slides }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -559,6 +580,7 @@
                             <td></td>
                             <td></td>
                             <td class="text-center">{{ field_counts.do_not_record }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -612,6 +634,7 @@
                                 <td class="text-center">
                                     {{ item.question.answer_count }}
                                 </td>
+                                <td class="text-center"></td>
                                 <td class="text-right">
                                     <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                         <i class="fa fa-arrows"></i>
@@ -661,6 +684,7 @@
                             <th>{% translate "Maximum length" %}</th>
                             <th class="text-center">{% translate "Public" %}</th>
                             <th class="text-center">{% translate "Answers" %}</th>
+                            <th class="text-center">{% translate "Settings" %}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -695,6 +719,7 @@
                                 </label>
                             </td>
                             <td class="text-center">{{ field_counts.name }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -738,6 +763,7 @@
                                 </label>
                             </td>
                             <td class="text-center">{{ field_counts.biography }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -781,6 +807,7 @@
                                 </label>
                             </td>
                             <td class="text-center">{{ field_counts.avatar }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -818,6 +845,7 @@
                             <td>{{ sform.cfp_avatar_source_max_length.as_field_group }}</td>
                             <td></td>
                             <td class="text-center">{{ field_counts.avatar_source }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -855,6 +883,7 @@
                             <td>{{ sform.cfp_avatar_license_max_length.as_field_group }}</td>
                             <td></td>
                             <td class="text-center">{{ field_counts.avatar_license }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -892,6 +921,7 @@
                             <td></td>
                             <td></td>
                             <td class="text-center">{{ field_counts.availabilities }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -928,6 +958,7 @@
                             <td></td>
                             <td></td>
                             <td class="text-center">{{ field_counts.additional_speaker }}</td>
+                            <td class="text-center"></td>
                             <td class="text-right">
                                 <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                     <i class="fa fa-arrows"></i>
@@ -981,6 +1012,7 @@
                                 <td class="text-center">
                                     {{ item.question.answer_count }}
                                 </td>
+                                <td class="text-center"></td>
                                 <td class="text-right">
                                     <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                         <i class="fa fa-arrows"></i>
@@ -1021,6 +1053,7 @@
                             <th>{% translate "Maximum length" %}</th>
                             <th class="text-center">{% translate "Public" %}</th>
                             <th class="text-center">{% translate "Answers" %}</th>
+                            <th class="text-center">{% translate "Settings" %}</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -1070,6 +1103,7 @@
                                 <td class="text-center">
                                     {{ item.question.answer_count }}
                                 </td>
+                                <td class="text-center"></td>
                                 <td class="text-right">
                                     <button type="button" draggable="true" class="btn btn-sm btn-primary dragsort-button" title="{% translate 'Move item' %}">
                                         <i class="fa fa-arrows"></i>
@@ -1098,4 +1132,51 @@
         {% include "orga/includes/submit_row.html" %}
     </form>
     </div>
+
+    {# ── Content Locale Language Selection Modal ──────────────────────────── #}
+    <dialog id="content-locale-modal" class="content-locale-dialog" aria-labelledby="content-locale-modal-title">
+        <div class="content-locale-dialog-content">
+                <div class="modal-header">
+                    <button type="button" class="close" id="content-locale-modal-close" aria-label="{% translate 'Close' %}">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    <h4 class="modal-title" id="content-locale-modal-title">
+                        <i class="fa fa-globe"></i>
+                        {% translate "Proposal Submission Languages" %}
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">
+                        {% blocktranslate trimmed %}
+                            Content Locale allows proposal submissions in different languages.
+                            The currently configured proposal submission languages are selected below.
+                            If you would like to allow proposal submissions in other languages, please select
+                            them from the list.
+                        {% endblocktranslate %}
+                    </p>
+
+                    <div id="content-locale-language-grid"
+                         class="language-grid-widget"
+                         data-all-languages="{{ content_locale_modal_all_languages }}"
+                         data-current="{{ content_locale_modal_current }}"
+                         data-update-url="{{ content_locale_update_url }}"
+                         data-field-id="{{ sform.cfp_ask_content_locale.auto_id|default:'' }}">
+                        {# Rendered by content-locale-modal.js #}
+                    </div>
+
+                    <div id="content-locale-modal-error" class="alert alert-danger" style="display:none;" role="alert"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" id="content-locale-modal-cancel">
+                        {% translate "Cancel" %}
+                    </button>
+                    <button type="button" class="btn btn-primary" id="content-locale-modal-save">
+                        <i class="fa fa-save"></i>
+                        {% translate "Save languages" %}
+                    </button>
+                </div>
+        </div>
+    </dialog>
+
+    <script src="{% static 'eventyay-common/js/content-locale-modal.js' %}"></script>
 {% endblock %}

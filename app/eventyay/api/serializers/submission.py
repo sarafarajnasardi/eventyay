@@ -307,7 +307,8 @@ class SubmissionOrgaSerializer(SubmissionSerializer):
             self.fields['assigned_reviewers'].queryset = self.event.reviewers
 
     def validate_content_locale(self, value):
-        if self.event and value not in self.event.content_locales:
+        current_locale = getattr(self.instance, 'content_locale', None)
+        if self.event and value not in self.event.content_locales and value != current_locale:
             raise serializers.ValidationError(
                 f'Invalid locale. Valid choices are: {", ".join(self.event.content_locales)}'
             )

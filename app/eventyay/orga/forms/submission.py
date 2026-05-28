@@ -116,10 +116,16 @@ class SubmissionForm(ReadOnlyFlag, RequestRequire, forms.ModelForm):
         elif 'track' in self.fields:
             self.fields['track'].queryset = event.tracks.all()
         if 'content_locale' in self.fields:
-            if len(event.content_locales) == 1:
+            choices = list(self.event.named_content_locales)
+            choice_codes = {code for code, _name in choices}
+            current_locale = getattr(instance, 'content_locale', None)
+            if current_locale and current_locale not in choice_codes:
+                choices.append((current_locale, instance.get_content_locale_display()))
+
+            if len(choices) == 1:
                 self.fields.pop('content_locale')
             else:
-                self.fields['content_locale'].choices = self.event.named_content_locales
+                self.fields['content_locale'].choices = choices
         # If duration is not required, point out that the default is the session type's duration,
         # but only if there is more than one session type, because otherwise users will be
         # confused what that is.
