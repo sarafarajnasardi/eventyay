@@ -234,9 +234,6 @@ class CfPSettingsForm(CfPGeneralSettingsForm):
                 ],
             )
 
-        if not obj.is_multilingual:
-            self.fields.pop('cfp_ask_content_locale', None)
-
     def save(self, *args, **kwargs):
         # Preserve fields_config (drag-drop order) before modifying settings
         fields_config = self.instance.cfp.settings.get('fields_config')

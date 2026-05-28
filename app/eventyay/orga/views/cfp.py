@@ -242,6 +242,16 @@ class CfPForms(EventPermissionRequired, TemplateView):
             'availabilities': availabilities_count,
         }
 
+        # --- Content Locale modal data ---
+        context['content_locale_modal_all_languages'] = json.dumps(
+            [{'code': code, 'name': str(name)} for code, name in event.available_content_locales]
+        )
+        context['content_locale_modal_current'] = json.dumps(event.content_locales)
+        context['content_locale_update_url'] = reverse(
+            'orga:cfp.content_locales.update',
+            kwargs={'event': event.slug},
+        )
+
         return context
 
     @transaction.atomic
@@ -338,7 +348,50 @@ class CfPForms(EventPermissionRequired, TemplateView):
             event.cfp.save(update_fields=['settings'])
 
 
+class ContentLocaleLanguageUpdate(EventPermissionRequired, View):
+    """AJAX endpoint to update the event's content_locales (proposal submission languages)."""
+    permission_required = 'base.update_event'
+
+    @transaction.atomic
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body.decode())
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return JsonResponse({'error': 'Invalid JSON'}, status=400)
+
+        locales = data.get('locales')
+        if not isinstance(locales, list):
+            return JsonResponse({'error': 'locales must be a list'}, status=400)
+
+        # Validate that all submitted codes exist in the available content languages.
+        # This intentionally does not restrict them to event.locales.
+        available_codes = {code for code, _ in request.event.available_content_locales}
+        invalid = [code for code in locales if code not in available_codes]
+        if invalid:
+            return JsonResponse({'error': f'Invalid locale codes: {invalid}'}, status=400)
+
+        if not locales:
+            # Fall back to event locales when nothing is selected
+            locales = list(request.event.locales)
+
+        request.event.settings.set('content_locales', locales)
+        request.event.update_language_configuration(
+            locales=request.event.locales,
+            content_locales=locales,
+            default_locale=request.event.locale,
+        )
+        request.event.save(update_fields=['locale', 'locale_array', 'content_locale_array'])
+        request.event.log_action(
+            'eventyay.event.content_locales.update',
+            person=request.user,
+            orga=True,
+            data={'content_locales': locales},
+        )
+        return JsonResponse({'success': True, 'content_locales': locales})
+
+
 class QuestionView(OrderActionMixin, OrgaCRUDView):
+
     model = TalkQuestion
     form_class = TalkQuestionForm
     template_namespace = 'orga/cfp'

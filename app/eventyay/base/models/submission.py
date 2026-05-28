@@ -21,6 +21,7 @@ from rest_framework import serializers
 
 from eventyay.base.models import Choices, User
 from eventyay.common.exceptions import SubmissionError
+from eventyay.common.language import LANGUAGE_NAMES
 from eventyay.common.text.path import path_with_hash
 from eventyay.common.text.phrases import phrases
 from eventyay.common.text.serialize import serialize_duration
@@ -723,7 +724,10 @@ class Submission(GenerateCode, PretalxModel):
         return self.event.locale
 
     def get_content_locale_display(self):
-        return str(dict(self.event.named_content_locales)[self.content_locale])
+        locale_names = dict(settings.LANGUAGES)
+        locale_names.update(getattr(self.event, 'named_plugin_locales', {}))
+        locale_names.update(LANGUAGE_NAMES)
+        return str(locale_names.get(self.content_locale, self.content_locale))
 
     def send_state_mail(self):
         from .mail import MailTemplateRoles

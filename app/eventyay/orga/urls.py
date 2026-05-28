@@ -137,6 +137,12 @@ urlpatterns = [
                 path('cfp/flow/', cfp.CfPFlowEditor.as_view(), name='cfp.flow'),
                 path('cfp/questions/', cfp.CfPForms.as_view(), name='cfp.questions.view'),
                 path(
+                    'cfp/content-locales/',
+                    cfp.ContentLocaleLanguageUpdate.as_view(),
+                    name='cfp.content_locales.update',
+                ),
+
+                path(
                     'cfp/questions/remind/',
                     cfp.CfPQuestionRemind.as_view(),
                     name='cfp.questions.remind',

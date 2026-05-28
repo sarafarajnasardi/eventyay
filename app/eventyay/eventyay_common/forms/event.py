@@ -55,7 +55,6 @@ class EventCommonSettingsForm(SettingsForm):
 
     auto_fields = [
         'locales',
-        'content_locales',
         'locale',
         'region',
         'imprint_url',
@@ -123,19 +122,23 @@ class EventCommonSettingsForm(SettingsForm):
                 self.initial[image_field] = None
                 self.initial[url_field] = current_value
         localized_language_choices = get_language_choices_native_with_ui_name()
-        for fname in ('locales', 'content_locales'):
+        if 'locales' in self.fields:
+            self.fields['locales'].label = _('Event Languages')
+            self.fields['locales'].help_text = _(
+                'These are the languages available for organizer managed event content, such as the event title, '
+                'description, public event information, and other organizer facing event data.'
+            )
+        for fname in ('locales',):
             if fname in self.fields:
                 self.fields[fname].choices = localized_language_choices
         # Ensure the language selectors use the custom dropdown widget even if defaults are not picked up elsewhere,
         # while preserving any existing widget attributes (ids, data-*, classes).
-        for fname in ('locales', 'content_locales'):
+        for fname in ('locales',):
             if fname in self.fields:
                 old_widget = self.fields[fname].widget
                 self.fields[fname].widget = MultipleLanguagesWidget(
                     choices=self.fields[fname].choices, attrs=getattr(old_widget, 'attrs', None)
                 )
-        if self.event and 'content_locales' in self.fields:
-            self.fields['content_locales'].initial = self.event.content_locales
 
 
 class EventUpdateForm(I18nModelForm):

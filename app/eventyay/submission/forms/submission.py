@@ -89,7 +89,7 @@ class InfoForm(
 
         self._set_track(instance=instance)
         self._set_submission_types(instance=instance)
-        self._set_locales()
+        self._set_locales(instance=instance)
         self._set_slot_count(instance=instance)
         if 'slides' in self.fields:
             slides_resources = list(get_slide_resources(instance)) if instance and instance.pk else []
@@ -173,13 +173,19 @@ class InfoForm(
                     _('Leave empty to use the default duration for the session type.')
                 )
 
-    def _set_locales(self):
+    def _set_locales(self, instance=None):
         if 'content_locale' in self.fields:
-            if len(self.event.content_locales) == 1:
+            choices = list(self.event.named_content_locales)
+            choice_codes = {code for code, _name in choices}
+            current_locale = getattr(instance, 'content_locale', None)
+            if current_locale and current_locale not in choice_codes:
+                choices.append((current_locale, instance.get_content_locale_display()))
+
+            if len(choices) == 1:
                 self.default_values['content_locale'] = self.event.content_locales[0]
                 self.fields.pop('content_locale')
             else:
-                self.fields['content_locale'].choices = self.event.named_content_locales
+                self.fields['content_locale'].choices = choices
 
     def _set_slot_count(self, instance=None):
         if not self.event.get_feature_flag('present_multiple_times'):
