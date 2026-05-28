@@ -13,9 +13,6 @@
     'use strict';
 
     /* ── Globals injected by the template ──────────────────────────── */
-    var UPDATE_URL     = window.contentLocaleUpdateUrl || '';
-    var FIELD_ID       = window.contentLocaleFieldId   || '';
-
     /* ── DOM refs ───────────────────────────────────────────────────── */
     var modal         = document.getElementById('content-locale-modal');
     var gridContainer  = document.getElementById('content-locale-language-grid');
@@ -24,7 +21,9 @@
     var closeBtn       = document.getElementById('content-locale-modal-close');
     var errorBox       = document.getElementById('content-locale-modal-error');
     var activeToggle   = document.getElementById('content-locale-active-toggle');
-    var hiddenField    = FIELD_ID ? document.getElementById(FIELD_ID) : null;
+    var updateUrl      = modal ? modal.dataset.updateUrl || '' : '';
+    var fieldId        = modal ? modal.dataset.fieldId || '' : '';
+    var hiddenField    = fieldId ? document.getElementById(fieldId) : null;
 
     /* ── Read data attributes ───────────────────────────────────────── */
     var allLanguages = [];
@@ -146,14 +145,10 @@
         window.alert('Enable Content Locale before configuring proposal submission languages.');
     }
 
-    function hideSettingsWarning() {
-    }
-
     /* ── Modal lifecycle ────────────────────────────────────────────── */
     function onModalShow() {
         setSelected(currentLocales);
         hideError();
-        hideSettingsWarning();
     }
 
     function openModal() {
@@ -175,7 +170,7 @@
 
     function contentLocaleIsActive() {
         var currentToggle = document.getElementById('content-locale-active-toggle') || activeToggle;
-        var currentHiddenField = FIELD_ID ? document.getElementById(FIELD_ID) : hiddenField;
+        var currentHiddenField = fieldId ? document.getElementById(fieldId) : hiddenField;
         if (currentToggle) {
             return currentToggle.checked;
         }
@@ -184,7 +179,7 @@
 
     function syncHiddenFieldIfToggleIsActive() {
         var currentToggle = document.getElementById('content-locale-active-toggle') || activeToggle;
-        var currentHiddenField = FIELD_ID ? document.getElementById(FIELD_ID) : hiddenField;
+        var currentHiddenField = fieldId ? document.getElementById(fieldId) : hiddenField;
         if (!currentHiddenField || !currentToggle || !currentToggle.checked || currentHiddenField.value !== 'do_not_ask') {
             return;
         }
@@ -226,10 +221,15 @@
                 return;
             }
 
+            if (!updateUrl) {
+                showError('Unable to save because the update URL is missing. Please reload the page and try again.');
+                return;
+            }
+
             saveBtn.disabled = true;
             saveBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Saving…';
 
-            fetch(UPDATE_URL, {
+            fetch(updateUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -284,18 +284,9 @@
             showSettingsWarning();
             return;
         }
-        hideSettingsWarning();
         syncHiddenFieldIfToggleIsActive();
         openModal();
     }, true);
-
-    if (activeToggle) {
-        activeToggle.addEventListener('change', function () {
-            if (contentLocaleIsActive()) {
-                hideSettingsWarning();
-            }
-        });
-    }
 
     if (cancelBtn) {
         cancelBtn.addEventListener('click', closeModal);

@@ -1158,7 +1158,9 @@
                     <div id="content-locale-language-grid"
                          class="language-grid-widget"
                          data-all-languages="{{ content_locale_modal_all_languages }}"
-                         data-current="{{ content_locale_modal_current }}">
+                         data-current="{{ content_locale_modal_current }}"
+                         data-update-url="{{ content_locale_update_url }}"
+                         data-field-id="{{ sform.cfp_ask_content_locale.auto_id|default:'' }}">
                         {# Rendered by content-locale-modal.js #}
                     </div>
 
@@ -1176,9 +1178,5 @@
         </div>
     </dialog>
 
-    <script>
-        window.contentLocaleUpdateUrl = "{{ content_locale_update_url }}";
-        window.contentLocaleFieldId = "{{ sform.cfp_ask_content_locale.auto_id|default:'' }}";
-    </script>
     <script src="{% static 'eventyay-common/js/content-locale-modal.js' %}"></script>
 {% endblock %}
