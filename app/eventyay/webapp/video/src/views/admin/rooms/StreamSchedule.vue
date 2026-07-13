@@ -10,7 +10,11 @@
 				.info
 					.title {{ schedule.title || 'Untitled Stream' }}
 					.url {{ schedule.url }}
-					.time {{ formatDateTime(schedule.start_time) }} - {{ formatDateTime(schedule.end_time) }} ({{ eventTimezone }})
+					.time
+						| {{ formatDateTime(schedule.start_time) }} - {{ formatDateTime(schedule.end_time) }}
+						span.tz-badge  {{ eventTimezone }} ({{ eventTzOffset }})
+					.time-utc
+						| UTC: {{ formatDateTimeUtc(schedule.start_time) }} - {{ formatDateTimeUtc(schedule.end_time) }}
 					.type {{ schedule.stream_type }}
 				.actions
 					bunt-icon-button(@click="editSchedule(schedule)") pencil
@@ -26,16 +30,29 @@
 				form.stream-schedule-form(@submit.prevent="saveSchedule")
 					bunt-input(name="title", v-model="formData.title", label="Title (optional)", placeholder="e.g., Day 1 Stream, Keynotes")
 					bunt-input(name="url", v-model="formData.url", label="Stream URL", :validation="v$.formData.url", required, placeholder="https://youtube.com/watch?v=...")
+					.tz-mismatch-warning(v-if="tzMismatch")
+						.tz-warning-icon !
+						.tz-warning-text
+							| Your browser timezone ({{ browserTimezone }}, {{ browserTzOffset }}) differs from the event timezone
+							| ({{ eventTimezone }}, {{ eventTzOffset }}). Times entered below are interpreted as
+							strong  {{ eventTimezone }}
+							| .
 					.datetime-field
-						label.datetime-label Start Time ({{ eventTimezone }})
+						label.datetime-label
+							| Start Time
+							span.tz-offset-badge  - {{ eventTimezone }} ({{ eventTzOffset }})
 						input.datetime-input(type="datetime-local", v-model="plainStartTime", :class="{'has-error': v$.formData.start_time.$error}")
+						.utc-hint(v-if="startTimeUtcHint") = {{ startTimeUtcHint }}
 						.error-message(v-if="v$.formData.start_time.$error") Start time is required
 					.datetime-field
-						label.datetime-label End Time ({{ eventTimezone }})
+						label.datetime-label
+							| End Time
+							span.tz-offset-badge  - {{ eventTimezone }} ({{ eventTzOffset }})
 						input.datetime-input(type="datetime-local", v-model="plainEndTime", :class="{'has-error': v$.formData.end_time.$error}")
+						.utc-hint(v-if="endTimeUtcHint") = {{ endTimeUtcHint }}
 						.error-message(v-if="v$.formData.end_time.$error") End time is required
 					.timezone-hint
-						i All times in {{ eventTimezone }}
+						i All times are in {{ eventTimezone }} ({{ eventTzOffset }})
 					bunt-select(name="stream_type", v-model="formData.stream_type", label="Stream Type", :options="streamTypes", option-value="id", option-label="label", :validation="v$.formData.stream_type")
 					.field-hint(v-if="formData.stream_type === 'iframe'") {{ IFRAME_PROVIDER_HELP_TEXT }}
 					.form-error(v-if="saveError")
@@ -99,6 +116,26 @@ export default {
 	computed: {
 		eventTimezone() {
 			return this.$store.state.world?.timezone || 'UTC';
+		},
+		browserTimezone() {
+			return moment.tz.guess();
+		},
+		tzMismatch() {
+			return this.browserTimezone !== this.eventTimezone;
+		},
+		eventTzOffset() {
+			return moment.tz(moment(), this.eventTimezone).format('[UTC]Z');
+		},
+		browserTzOffset() {
+			return moment.tz(moment(), this.browserTimezone).format('[UTC]Z');
+		},
+		startTimeUtcHint() {
+			if (!this.formData.start_time) return null;
+			return this.formData.start_time.clone().utc().format('YYYY-MM-DD HH:mm [UTC]');
+		},
+		endTimeUtcHint() {
+			if (!this.formData.end_time) return null;
+			return this.formData.end_time.clone().utc().format('YYYY-MM-DD HH:mm [UTC]');
 		},
 		plainStartTime: {
 			get() {
@@ -477,6 +514,10 @@ export default {
 			const tz = this.eventTimezone || 'UTC';
 			return this.parseApiDateTime(datetime).tz(tz).format('YYYY-MM-DD HH:mm');
 		},
+		formatDateTimeUtc(datetime) {
+			if (!datetime) return '';
+			return this.parseApiDateTime(datetime).utc().format('YYYY-MM-DD HH:mm');
+		},
 		parseApiDateTime(datetime) {
 			if (!datetime) return moment.invalid();
 			if (moment.isMoment(datetime)) return datetime.clone();
@@ -520,12 +561,28 @@ export default {
 			.title
 				font-weight: 500
 				margin-bottom: 4px
-			.url, .time, .type
+			.url, .time, .time-utc, .type
 				font-size: 12px
 				color: $clr-grey-600
 				margin-top: 2px
 			.url
 				word-break: break-all
+			.time
+				display: flex
+				align-items: center
+				flex-wrap: wrap
+				gap: 0 4px
+				.tz-badge
+					background: rgba(0, 120, 212, 0.10)
+					color: #0078d4
+					border-radius: 3px
+					padding: 0 4px
+					font-size: 11px
+					font-weight: 500
+			.time-utc
+				color: $clr-grey-500
+				font-size: 11px
+				font-style: italic
 		.actions
 			display: flex
 			gap: 8px
@@ -608,9 +665,38 @@ export default {
 				color: $clr-danger
 				font-size: 12px
 				margin-top: 4px
+		.tz-mismatch-warning
+			display: flex
+			align-items: flex-start
+			gap: 10px
+			margin-bottom: 20px
+			padding: 12px 14px
+			background: rgba(255, 152, 0, 0.10)
+			border-left: 3px solid #f57c00
+			border-radius: 4px
+			.tz-warning-icon
+				font-size: 16px
+				color: #f57c00
+				flex-shrink: 0
+				margin-top: 1px
+			.tz-warning-text
+				font-size: 13px
+				line-height: 1.5
+				color: $clr-grey-800
+		.datetime-field
+			.tz-offset-badge
+				font-weight: 400
+				color: #0078d4
+				font-size: 11px
+			.utc-hint
+				font-size: 11px
+				color: $clr-grey-500
+				font-style: italic
+				margin-top: 4px
+				padding-left: 2px
 		.timezone-hint
 			margin-bottom: 16px
-			font-size: 14px
+			font-size: 13px
 			color: $clr-grey-600
 			i
 				font-style: italic
