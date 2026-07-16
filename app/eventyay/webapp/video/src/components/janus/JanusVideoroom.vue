@@ -14,11 +14,11 @@
 			span Connecting...
 
 	.room-surface(v-show="connectionState === 'connected'")
-		.gallery(ref="container", :style="gridStyle", v-resize-observer="onResize")
+		.gallery(ref="container", :style="gridStyle", :class="{ 'has-focused-tile': !!focusedTile }", v-resize-observer="onResize")
 			.video-tile(
 				v-for="tile in tiles",
 				:key="tile.key",
-				:class="{ 'is-local': tile.local && !tile.screen, 'is-screen': tile.screen, 'is-speaking': tile.speaking }"
+				:class="{ 'is-local': tile.local && !tile.screen, 'is-screen': tile.screen, 'is-speaking': tile.speaking, 'is-focused': focusedTileKey === tile.key, 'is-dimmed': focusedTileKey && focusedTileKey !== tile.key }"
 			)
 				.media-frame(:id="`janus_${tile.key}`")
 					video(
@@ -42,7 +42,7 @@
 						:class="{ 'is-hidden': !tile.hasVideo }",
 						:data-feed-id="tile.id",
 						autoplay,
-						playsinline
+						playsinline,
 					)
 					.avatar-wrap(v-if="!tile.hasVideo && !tile.screen")
 						avatar(v-if="tile.user", :user="tile.user", :size="size === 'tiny' ? 40 : 96")
@@ -61,12 +61,55 @@
 							.mdi(:class="tile.screen ? 'mdi-monitor-share' : 'mdi-account'")
 							span {{ tile.label }}
 						.tile-actions
-							button.tile-action(type="button", title="Fullscreen", @click="requestFullscreen('janus_' + tile.key)")
-								.mdi.mdi-fullscreen
+							button.tile-action(type="button", :title="focusedTileKey === tile.key ? 'Close spotlight' : 'Open spotlight'", @click="toggleFocusedTile(tile.key)")
+								.mdi(:class="focusedTileKey === tile.key ? 'mdi-arrow-collapse' : 'mdi-arrow-expand'")
 							button.tile-action(type="button", v-if="tile.local && tile.screen", :title="$t('JanusVideoroom:tool-screenshare:off')", @click="stopScreenShare")
 								.mdi.mdi-monitor-off
 
 			.slow-banner(v-if="downstreamSlowLinkCount > 5 && videoOutput", @click="disableIncomingVideo") {{ $t('JanusVideoroom:slow:text') }}
+
+		.focus-overlay(v-if="focusedTile")
+			.focus-overlay__surface
+				.media-frame.media-frame--focused
+					video(
+						v-if="focusedTile.local && !focusedTile.screen",
+						ref="focusedLocalVideo",
+						:class="{ 'is-hidden': !focusedTile.hasVideo }",
+						autoplay,
+						playsinline,
+						muted
+					)
+					video(
+						v-else-if="focusedTile.local && focusedTile.screen",
+						ref="focusedScreenVideo",
+						autoplay,
+						playsinline,
+						muted
+					)
+					video(
+						v-else,
+						ref="focusedRemoteVideo",
+						class="remote-media",
+						:class="{ 'is-hidden': !focusedTile.hasVideo }",
+						autoplay,
+						playsinline
+					)
+					.avatar-wrap(v-if="!focusedTile.hasVideo && !focusedTile.screen")
+						avatar(v-if="focusedTile.user", :user="focusedTile.user", :size="128")
+						.mdi.mdi-account-circle(v-else)
+					.tile-gradient
+					.tile-top
+						.audio-meter(:class="{ active: focusedTile.audioLevel > 0.01 }")
+							.audio-meter-fill(:style="audioMeterStyle(focusedTile)")
+						.mute-pill(v-if="focusedTile.muted")
+							.mdi.mdi-microphone-off
+					.tile-bottom
+						span.identity.identity--plain
+							.mdi(:class="focusedTile.screen ? 'mdi-monitor-share' : 'mdi-account'")
+							span {{ focusedTile.label }}
+						.tile-actions
+							button.tile-action(type="button", title="Close spotlight", @click="focusedTileKey = null")
+								.mdi.mdi-close
 
 		.info-bar
 			.info-message(v-if="!videoOutput") {{ $t('JanusVideoroom:video-output:off') }}
@@ -250,6 +293,7 @@ export default {
 				width: 0,
 				height: 0
 			},
+			focusedTileKey: null,
 			showFeedbackPrompt: false,
 			showDevicePrompt: false,
 			selectedUser: null,
@@ -336,10 +380,22 @@ export default {
 				})
 			return localTiles.concat(remoteTiles)
 		},
+		focusedTile() {
+			return this.tiles.find(tile => tile.key === this.focusedTileKey) || null
+		},
 	},
 	watch: {
 		tiles() {
-			this.$nextTick(this.onResize)
+			if (this.focusedTileKey && !this.tiles.some(tile => tile.key === this.focusedTileKey)) {
+				this.focusedTileKey = null
+			}
+			this.$nextTick(() => {
+				this.onResize()
+				this.syncFocusedTileMedia()
+			})
+		},
+		focusedTile() {
+			this.$nextTick(this.syncFocusedTileMedia)
 		}
 	},
 	mounted() {
@@ -1258,10 +1314,35 @@ export default {
 				gap,
 			)
 		},
-		requestFullscreen(id) {
-			const element = document.getElementById(id)
-			if (element?.requestFullscreen) {
-				element.requestFullscreen()
+		toggleFocusedTile(tileKey) {
+			this.focusedTileKey = this.focusedTileKey === tileKey ? null : tileKey
+		},
+		syncFocusedTileMedia() {
+			const tile = this.focusedTile
+			if (!tile) return
+			if (tile.local && tile.screen) {
+				this.attachVideoToRef('focusedScreenVideo', this.screenShareStream, true, `focused screen tile ${tile.key}`)
+				return
+			}
+			if (tile.local) {
+				this.attachVideoToRef('focusedLocalVideo', this.localStream, true, `focused local tile ${tile.key}`)
+				return
+			}
+			const feed = this.remoteFeeds.find(item => this.feedIdEquals(item.id, tile.id))
+			this.attachVideoToRef('focusedRemoteVideo', feed?.stream, false, `focused remote tile ${tile.key}`)
+		},
+		attachVideoToRef(refName, stream, muted, label) {
+			const video = this.singleRef(this.$refs[refName])
+			if (!video || !stream) return
+			if (video.srcObject !== stream) {
+				Janus.attachMediaStream(video, stream)
+			}
+			video.muted = muted
+			const playPromise = video.play()
+			if (playPromise?.catch) {
+				playPromise.catch(error => {
+					log('venueless', 'warn', `${label} playback did not start automatically: ${error}`)
+				})
 			}
 		},
 		async showUserCard(event, user) {
@@ -1366,59 +1447,96 @@ export default {
 		.retry-btn
 			margin-top: 8px
 
-	.room-surface
-		display: flex
-		flex: auto 1 1
-		flex-direction: column
-		min-height: 0
+		.room-surface
+			display: flex
+			flex: auto 1 1
+			flex-direction: column
+			min-height: 0
 
-	.gallery
-		align-content: center
-		align-items: center
-		display: grid
-		flex: auto 1 1
-		gap: 12px
-		grid-template-columns: repeat(var(--tile-columns), minmax(0, 1fr))
-		grid-template-rows: repeat(var(--tile-rows), minmax(0, 1fr))
-		justify-content: center
-		min-height: 0
-		overflow: hidden
-		padding: 16px
-		position: relative
+			.gallery
+				align-content: center
+				align-items: center
+				display: grid
+				flex: auto 1 1
+				gap: 12px
+				grid-template-columns: repeat(var(--tile-columns), minmax(0, 1fr))
+				grid-template-rows: repeat(var(--tile-rows), minmax(0, 1fr))
+				justify-content: center
+				min-height: 0
+				overflow: hidden
+				padding: 16px
+				position: relative
 
-	.video-tile
-		background: #252a32
-		border-radius: 8px
-		height: 100%
-		max-height: 100%
-		max-width: 100%
-		min-height: 0
-		min-width: 0
-		overflow: hidden
-		position: relative
-		width: 100%
-		&.is-speaking .media-frame
-			box-shadow: 0 0 0 3px #2d8cff
-		&.is-screen video
-			object-fit: contain
-		&.is-local:not(.is-screen) video
-			transform: rotateY(180deg)
-
-	.media-frame
-		background: #252a32
-		border-radius: 8px
-		height: 100%
-		overflow: hidden
-		position: relative
-		transition: box-shadow .16s ease
-		width: 100%
-		video
-			background: #111317
+		.video-tile
+			background: #252a32
+			border-radius: 8px
 			height: 100%
-			object-fit: cover
+			max-height: 100%
+			max-width: 100%
+			min-height: 0
+			min-width: 0
+			overflow: hidden
+			position: relative
 			width: 100%
-			&.is-hidden
-				opacity: 0
+			&.is-focused
+				visibility: hidden
+			&.is-dimmed
+				opacity: .28
+				transform: scale(.98)
+			&.is-speaking .media-frame
+				box-shadow: 0 0 0 3px #2d8cff
+			&.is-screen video
+				object-fit: contain
+			&.is-local:not(.is-screen) video
+				transform: rotateY(180deg)
+
+		.media-frame
+			background: #252a32
+			border-radius: 8px
+			height: 100%
+			overflow: hidden
+			position: relative
+			transition: box-shadow .16s ease
+			width: 100%
+			video
+				background: #111317
+				height: 100%
+				object-fit: cover
+				width: 100%
+				&.is-hidden
+					opacity: 0
+
+		.focus-overlay
+			align-items: stretch
+			background: rgba(10, 12, 16, .92)
+			border-radius: 12px
+			bottom: 16px
+			display: flex
+			left: 16px
+			padding: 12px
+			position: absolute
+			right: 16px
+			top: 16px
+			z-index: 4
+
+		.focus-overlay__surface
+			display: flex
+			flex: 1 1 auto
+			min-height: 0
+			min-width: 0
+
+		.media-frame--focused
+			background: #000
+			border-radius: 12px
+			display: flex
+			flex: 1 1 auto
+			align-items: center
+			justify-content: center
+			video
+				height: 100%
+				max-height: 100%
+				max-width: 100%
+				width: 100%
 
 	.avatar-wrap
 		align-items: center
